@@ -1,0 +1,26 @@
+{
+  "name": "puppeteer-signin",
+  "version": "0.1.0",
+  "description": "use puppeteer to sign in",
+  "main": "lib/src/index.js",
+  "types": "src/index.ts",
+  "license": "MIT",
+  "scripts": {
+    "lint": "tslint src/*.ts",
+    "prepublish": "tsc"
+  },
+  "dependencies": {
+    "puppeteer": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^22.2.2",
+    "@types/puppeteer": "^1.2.1",
+    "jest": "^22.4.3",
+    "ts-jest": "^22.4.2",
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.1"
+  },
+  "engines": {
+    "node": ">= 8.0.0"
+  }
+}

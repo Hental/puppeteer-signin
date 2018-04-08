@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    // editor
+    "charset": "utf-8",
+    "newLine": "LF",
+
+    // syntax
+    "strict": true,
+    "noImplicitAny": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "alwaysStrict": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "esnext"
+    ],
+
+    // compile
+    "rootDir": ".",
+    "outDir": "./lib",
+    "target": "es2017",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "removeComments": false,
+    "sourceMap": true,
+    "allowJs": true,
+    "noEmit": false,
+    "diagnostics": true,
+    "locale": "zh-cn",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "test/**/*",
+    "dist/*",
+    "lib/*"
+  ]
+}

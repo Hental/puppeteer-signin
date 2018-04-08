@@ -1,0 +1,49 @@
+// @see antd-tslint  https://github.com/ant-design/antd-tools/blob/master/lib/tslint.json
+
+{
+  "extends": [
+    "tslint:latest"
+  ],
+  "rules": {
+    "quotemark": [
+      true,
+      "single",
+      "jsx-double"
+    ],
+    "no-console": [
+      true,
+      "debug",
+      "info",
+      "log",
+      "time",
+      "timeEnd",
+      "trace"
+    ],
+    "semicolon": [
+      true,
+      "always"
+    ],
+    "object-literal-sort-keys": false,
+    "curly": [true, "ignore-same-line"],
+    "ordered-imports": [
+      false,
+      {
+        "import-sources-order": "lowercase-last",
+        "named-imports-order": "lowercase-last"
+      }
+    ],
+    "member-ordering": [
+      true,
+      {
+        "order": [
+          "statics-first",
+          "private-instance-method",
+          "public-instance-method"
+        ]
+      }
+    ],
+    "no-empty": false,
+    "interface-name": [false, "never-prefix"],
+    "no-submodule-imports": false
+  }
+}

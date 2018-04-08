@@ -1,0 +1,24 @@
+# cache
+.DS_Store
+*~
+.cache
+
+# packages
+node_modules/
+
+# editor
+.vscode/
+
+# log
+log/
+*.log
+
+# compiler target
+dist/
+
+# other
+test/coverage
+__*.*
+lib/
+
+*.py
