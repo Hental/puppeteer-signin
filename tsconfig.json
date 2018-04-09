@@ -32,15 +32,15 @@
     "locale": "zh-cn",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"],
     }
   },
   "include": [
-    "src/*"
+    "src/*",
+    "test/**/*"
   ],
   "exclude": [
     "node_modules",
-    "test/**/*",
     "dist/*",
     "lib/*"
   ]

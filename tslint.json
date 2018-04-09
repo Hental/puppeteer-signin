@@ -42,6 +42,7 @@
         ]
       }
     ],
+    "no-implicit-dependencies": false,
     "no-empty": false,
     "interface-name": [false, "never-prefix"],
     "no-submodule-imports": false,

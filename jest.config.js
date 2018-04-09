@@ -1,8 +1,11 @@
-module.exports = {
+const config = {
   rootDir: '.',
   testRegex: 'test/.*\\.(test|spec)\\.ts$',
   transform: {
     '^.+\\.ts$': '<rootDir>/node_modules/ts-jest/preprocessor.js',
+  },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
   moduleFileExtensions: [
     'ts',
@@ -20,3 +23,5 @@ module.exports = {
   ],
   coverageDirectory: 'test/coverage',
 };
+
+module.exports = config;

@@ -12,15 +12,15 @@ interface ClientOptions {
 }
 
 interface EventsMap {
-  beforeSubmit?(page: Page, options?: any): void;
-  beforeNavigation?(page: Page, options?: any): void;
-  ready?(page: Page, options?: any): void;
+  readySignin?(page: Page, args: [string, string, any]): void;
+  beforeSubmit?(page: Page, args: [string, string, any]): void;
+  beforeNavigation?(page: Page, args: [string, string, any]): void;
   error?(e: Error): void;
 }
 
 interface CookieFilter {
-  domain?: string;
-  path?: string;
+  domain?: string | RegExp;
+  path?: string | RegExp;
   expired?: boolean | 'all';
   httpOnly?: boolean | 'all';
   secure?: boolean | 'all';
@@ -49,10 +49,15 @@ class Client {
 
   constructor(options: ClientOptions) {
     this._initOption(options);
-    this._lanch();
   }
 
-  public setOptions(opt: ClientOptions) {
+  public async launch() {
+    const opt = this.options;
+    this._browser = await puppeteer.launch({ headless: !opt.debug });
+    this._page = await this._browser.newPage();
+  }
+
+  public setOptions(opt: Partial<ClientOptions>) {
     this.options = {
       ...this.options,
       ...opt,
@@ -66,64 +71,81 @@ class Client {
   public async signin(username: string, password: string, options?: object) {
     const opt = this.options;
     const page = this._page;
+    const args = [username, password, options];
     const mockSignin = async () => {
-      await this._emit('ready', page, options);
+      await this._emit('readySignin', page, args);
       await this._callInput(page, opt.username, username);
       await this._callInput(page, opt.password, password);
-      await this._emit('beforeSubmit', page, options);
+      await this._emit('beforeSubmit', page, args);
       await this._callSubmit(page, opt.submit);
-      await this._emit('beforeNavigation', page, options);
+      await this._emit('beforeNavigation', page, args);
       await page.waitForNavigation();
     };
 
     return new Promise(async (res, rej) => {
       const handler = (err: Error) => this._handleError(err, rej);
 
+      page.on('error', handler);
+
       page.on('load', async () => {
         try {
+          await this.clearCookies();
           await mockSignin();
+          this._cookies = await page.cookies();
           res(this.getCookiesMap());
         } catch (error) {
           handler(error);
         }
       });
-      page.on('error', handler);
-      await page.goto(opt.signinUrl);
+
+      try {
+        await page.goto(opt.signinUrl);
+      } catch (error) {
+        handler(error);
+      }
     });
   }
 
-  public async getCookiesMap(): Promise<{ [key: string]: string | undefined }> {
-    const cookieList = await this.getCookies();
-    const cookies = cookieList.reduce((prev: any, cur) => {
+  public hasCookies() {
+    return hasContent(this._cookies);
+  }
+
+  public async clearCookies() {
+    await this._page.setCookie();
+    this._cookies = [];
+  }
+
+  public getCookiesMap(): { [key: string]: string | undefined } {
+    const cookieList = this.getCookies();
+    return cookieList.reduce((prev: any, cur) => {
       prev[cur.name] = cur.value;
       return prev;
     }, {});
-    return cookies;
   }
 
-  public async getCookies({
+  public getCookies({
     domain = '.',
     path = '.',
     expired = 'all',
     httpOnly = 'all',
     secure = 'all',
-  }: CookieFilter = {}): Promise<Cookie[]> {
-    const cookies = await this._getCookies();
-    const regDomain = new RegExp(domain);
-    const refPath = new RegExp(path);
+  }: CookieFilter = {}): Cookie[] {
+    const cookies = this._getCookies();
+    const regDomain = typeof domain === 'string' ? new RegExp(domain) : domain;
+    const regPath = typeof path === 'string' ? new RegExp(path) : path;
     const nowTime = Date.now();
 
     return cookies.filter((c) => (
       regDomain.test(c.domain) &&
-      refPath.test(c.path) &&
+      regPath.test(c.path) &&
       (httpOnly === 'all' ? true : c.httpOnly === httpOnly) &&
       (secure === 'all' ? true : c.secure === secure) &&
       expired === 'all' ? true : c.expires < nowTime === expired
     ));
   }
 
-  public async toJson() {
-    const map = await this.getCookiesMap();
+  public toJson() {
+    const map = this.getCookiesMap();
     return JSON.stringify(map);
   }
 
@@ -137,15 +159,15 @@ class Client {
     await this._browser.close();
   }
 
-  private async _getCookies(): Promise<Cookie[]> {
+  private _getCookies() {
     if (!hasContent(this._cookies)) {
-      const cookies = await this._page.cookies();
-      if (hasContent(cookies)) {
-        this._cookies = cookies;
-      } else {
-        warn('get cookies', 'please signin first.');
-        return [];
-      }
+      // const cookies = await this._page.cookies();
+      // if (hasContent(cookies)) {
+      //   this._cookies = cookies;
+      // } else {
+      warn('get cookies', 'please signin first.');
+      return [];
+      // }
     }
     return this._cookies;
   }
@@ -159,12 +181,6 @@ class Client {
       ...defOptions,
       ...opt,
     };
-  }
-
-  private async _lanch() {
-    const opt = this.options;
-    this._browser = await puppeteer.launch({ headless: !opt.debug });
-    this._page = await this._browser.newPage();
   }
 
   private async _callInput(page: Page, cfg: InputConfig, val: string) {
@@ -212,4 +228,31 @@ class Client {
   }
 }
 
-export default Client;
+// tslint:disable-next-line:max-classes-per-file
+class ProxyClient {
+  constructor(options: ClientOptions) {
+    const instance = new Client(options);
+
+    const proxy = new Proxy(instance, {
+      get(target, prop, receiver) {
+        if (prop === 'launch' || prop === 'on') {
+          return Reflect.get(target, prop).bind(target);
+        } else if (!Reflect.get(target, '_browser') || !Reflect.get(target, '_page')) {
+          Reflect.get(target, '_handleError', receiver).call(
+            target,
+            new Error('must launch browser first!'),
+          );
+          return () => { };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as Client;
+    return proxy;
+  }
+}
+
+// tslint:disable-next-line:no-empty-interface
+interface ProxyClient extends Client {}
+
+export default ProxyClient;
+export { ClientOptions, CookieFilter };

@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "tslint src/*.ts",
+    "test": "jest",
     "prepublish": "tsc"
   },
   "dependencies": {
