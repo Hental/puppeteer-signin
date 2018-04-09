@@ -45,6 +45,6 @@
     "no-empty": false,
     "interface-name": [false, "never-prefix"],
     "no-submodule-imports": false,
-    "variable-name": false,
+    "variable-name": false
   }
 }

@@ -26,10 +26,11 @@ interface CookieFilter {
   secure?: boolean | 'all';
 }
 
-function hasContent(arr?: Array<any>) {
+function hasContent(arr?: any[]) {
   return arr && arr.length > 0;
 }
 
+// tslint:disable-next-line:ban-types
 function callable(fn: any): fn is Function {
   return typeof fn === 'function';
 }
@@ -63,8 +64,8 @@ class Client {
   }
 
   public async signin(username: string, password: string, options?: object) {
-    const opt = this.options
-    const page = this._page
+    const opt = this.options;
+    const page = this._page;
     const mockSignin = async () => {
       await this._emit('ready', page, options);
       await this._callInput(page, opt.username, username);
@@ -94,8 +95,8 @@ class Client {
   public async getCookiesMap(): Promise<{ [key: string]: string | undefined }> {
     const cookieList = await this.getCookies();
     const cookies = cookieList.reduce((prev: any, cur) => {
-      prev[cur.name] = cur.value
-      return prev
+      prev[cur.name] = cur.value;
+      return prev;
     }, {});
     return cookies;
   }
@@ -112,7 +113,7 @@ class Client {
     const refPath = new RegExp(path);
     const nowTime = Date.now();
 
-    return cookies.filter(c => (
+    return cookies.filter((c) => (
       regDomain.test(c.domain) &&
       refPath.test(c.path) &&
       (httpOnly === 'all' ? true : c.httpOnly === httpOnly) &&
@@ -122,12 +123,13 @@ class Client {
   }
 
   public async toJson() {
-    return JSON.stringify(await this.getCookiesMap());
+    const map = await this.getCookiesMap();
+    return JSON.stringify(map);
   }
 
   public toString(): string {
     const cookies = this._cookies;
-    return cookies.map(c => `${c.name}=${c.value}`).join('; ');
+    return cookies.map((c) => `${c.name}=${c.value}`).join('; ');
   }
 
   public async close() {
