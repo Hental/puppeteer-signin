@@ -40,10 +40,10 @@ function warn(type: string, ...msgs: any[]) {
 }
 
 class Client {
-  public options !: ClientOptions;
+  public options!: ClientOptions;
 
-  private _browser !: Browser;
-  private _page !: Page;
+  private _browser!: Browser;
+  private _page!: Page;
   private _cookies: Cookie[] = [];
   private _events: EventsMap = {};
 

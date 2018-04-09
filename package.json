@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "tslint src/*.ts",
-    "prepublish": "tsc src/*.ts --outDir lib"
+    "prepublish": "tsc"
   },
   "dependencies": {
     "puppeteer": "^1.2.0"
