@@ -14,4 +14,4 @@ install:
 - yarn
 
 script:
-- yarn test:cover
+- yarn test:coveralls
