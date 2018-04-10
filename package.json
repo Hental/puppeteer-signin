@@ -5,6 +5,7 @@
   "main": "lib/src/index.js",
   "types": "src/index.ts",
   "license": "MIT",
+  "homepage": "https://github.com/Hental/puppeteer-signin",
   "keywords": [
     "puppeteer"
   ],
@@ -19,7 +20,7 @@
     "lint": "tslint src/*.ts",
     "test": "jest",
     "test:cover": "yarn test -- --coverage",
-    "test:coveralls": "node --harmony_proxies node_modules/.bin/jest --coverage && cat ./test/coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+    "test:coveralls": "node node_modules/.bin/jest --coverage && cat ./test/coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "prepare": "tsc"
   },
   "dependencies": {
