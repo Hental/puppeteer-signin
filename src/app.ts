@@ -26,6 +26,11 @@ interface CookieFilter {
   secure?: boolean | 'all';
 }
 
+interface SigninOptions {
+  jump?: boolean;
+  [key: string]: any;
+}
+
 function hasContent(arr?: any[]) {
   return arr && arr.length > 0;
 }
@@ -36,7 +41,7 @@ function callable(fn: any): fn is Function {
 }
 
 function warn(type: string, ...msgs: any[]) {
-  console.warn(`[warning ${type}]`, ...msgs);
+  console.warn(`[warning] [${type}]`, ...msgs);
 }
 
 class Client {
@@ -68,10 +73,11 @@ class Client {
     this._events[eventname] = cb;
   }
 
-  public async signin(username: string, password: string, options?: object) {
+  public async signin(username: string, password: string, options: SigninOptions = {}) {
     const opt = this.options;
     const page = this._page;
     const args = [username, password, options];
+    const { jump = true } = options;
     const mockSignin = async () => {
       await this._emit('readySignin', page, args);
       await this._callInput(page, opt.username, username);
@@ -79,11 +85,14 @@ class Client {
       await this._emit('beforeSubmit', page, args);
       await this._callSubmit(page, opt.submit);
       await this._emit('beforeNavigation', page, args);
-      await page.waitForNavigation();
+      if (jump) await page.waitForNavigation();
     };
 
     return new Promise(async (res, rej) => {
-      const handler = (err: Error) => this._handleError(err, rej);
+      const handler = (err: Error) => {
+        this._handleError(err, rej);
+        res({});
+      };
 
       page.on('error', handler);
 
@@ -255,4 +264,4 @@ class ProxyClient {
 interface ProxyClient extends Client {}
 
 export default ProxyClient;
-export { ClientOptions, CookieFilter };
+export { ClientOptions, CookieFilter, SigninOptions };

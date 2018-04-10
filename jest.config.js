@@ -1,8 +1,9 @@
 const config = {
   rootDir: '.',
+  setupFiles: ['<rootDir>/test/setup.ts'],
   testRegex: 'test/.*\\.(test|spec)\\.ts$',
   transform: {
-    '^.+\\.ts$': '<rootDir>/node_modules/ts-jest/preprocessor.js',
+    '^.+\\.ts$': 'ts-jest',
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'

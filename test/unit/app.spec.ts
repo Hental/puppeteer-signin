@@ -1,4 +1,4 @@
-import Client, { ClientOptions } from '@/app';
+import Client, { ClientOptions, SigninOptions } from '@/app';
 import { Cookie } from 'puppeteer';
 
 function mockCookie(opt: Partial<Cookie> = {}): Cookie {
@@ -16,59 +16,62 @@ function mockCookie(opt: Partial<Cookie> = {}): Cookie {
 }
 
 function mockClient(opt: Partial<ClientOptions> = {}) {
-  return new Client({
-    signinUrl: 'http://localhost',
-    username: '',
-    password: '',
-    submit: '',
+  const p: number = (global as any).PORT;
+  const c = new Client({
+    signinUrl: `http://localhost:${p}`,
+    username: '.username',
+    password: '.password',
+    submit: '.submit',
     ...opt,
   });
+  return c;
+}
+
+async function mockLaunchClient(opt: Partial<ClientOptions> = {}) {
+  const c = mockClient(opt);
+  await c.launch();
+  return c;
 }
 
 describe('test main', async () => {
-  const client: Client = mockClient();
+  const globalClient: Client = mockClient();
 
   beforeAll(async () => {
-    await client.launch();
+    await globalClient.launch();
   });
-
-  // beforeEach(async () => {
-  //   const client: Client = new Client({
-  //     signinUrl: 'http://localhost.com',
-  //     username: '',
-  //     password: '',
-  //     submit: '',
-  //   });
-  //   await client.launch();
-  //   return client;
-  // });
 
   afterAll(async () => {
-    await client.close();
+    await globalClient.close();
   });
 
-  function setCookies(...cookies: Cookie[]) {
-    Reflect.set(client, '_cookies', cookies);
+  function setCookies(c: Client | Cookie, ...cookies: Cookie[]) {
+    if (!!Reflect.get(c, '_cookies')) {
+      Reflect.set(c, '_cookies', cookies);
+      return;
+    }
+    Reflect.set(globalClient, '_cookies', [c, ...cookies]);
   }
 
   it('should lanch first', () => {
-    const newClient = mockClient();
+    const client = mockClient();
     expect.assertions(1);
     try {
-      newClient.getCookies();
+      client.getCookies();
     } catch (err) {
       expect(err).toBeInstanceOf(Error);
     }
   });
 
-  it('get empty array if no cookies', () => {
+  it('get empty array if no cookies', async () => {
+    const client = await mockLaunchClient();
     expect(client.getCookies().length).toBe(0);
     expect(client.hasCookies()).toBeFalsy();
   });
 
   it('warn if not signin success', async () => {
+    const client = await mockLaunchClient();
     const fn = console.warn = jest.fn();
-    await client.signin('', '');
+    await client.signin('', '', { jump: false });
     expect(fn).toBeCalled();
     expect(client.hasCookies()).toBeFalsy();
   });
@@ -76,8 +79,8 @@ describe('test main', async () => {
   it('option username add password can be string or function', async () => {
     const password = jest.fn();
     const username = jest.fn();
-    const args: [string, string] = ['username', 'password'];
-    client.setOptions({
+    const args: [string, string, SigninOptions] = ['username', 'password', { jump: false }];
+    const client = await mockLaunchClient({
       password,
       username,
     });
@@ -85,44 +88,46 @@ describe('test main', async () => {
     const page = Reflect.get(client, '_page');
 
     expect(username).toBeCalled();
-    expect(password).toBeCalledWith(page, args[0]);
+    expect(username).toBeCalledWith(page, args[0]);
     expect(password).toBeCalled();
     expect(password).toBeCalledWith(page, args[1]);
   });
 
   it('call event when signin', async () => {
+    const client = await mockLaunchClient();
     const cb1 = jest.fn();
     const cb2 = jest.fn();
     const cb3 = jest.fn();
     client.on('readySignin', cb1);
     client.on('beforeSubmit', cb2);
     client.on('beforeNavigation', cb3);
-    await client.signin('', '');
+    const args = ['', '', { jump: false }];
+    await client.signin.apply(client, args);
     const page = Reflect.get(client, '_page');
 
     expect(cb1).toBeCalled();
-    expect(cb1).toBeCalledWith(page);
+    expect(cb1).toBeCalledWith(page, args);
     expect(cb2).toBeCalled();
-    expect(cb2).toBeCalledWith(page);
+    expect(cb2).toBeCalledWith(page, args);
     expect(cb3).toBeCalled();
-    expect(cb3).toBeCalledWith(page);
+    expect(cb3).toBeCalledWith(page, args);
   });
 
   it('register error event and it will handle All error', async () => {
-    const newClient = mockClient({ signinUrl: '' });
+    const client = mockClient({ signinUrl: '' });
     const errorCb = jest.fn();
-    newClient.on('error', errorCb);
-    newClient.getCookies();
+    client.on('error', errorCb);
+    client.getCookies();
 
     expect(errorCb).toBeCalled();
     const times = errorCb.mock.calls.length;
 
-    await newClient.launch();
-    await newClient.signin('', '');
+    await client.launch();
+    await client.signin('', '', { jump: false });
     expect(errorCb).toHaveBeenCalledTimes(times + 1);
   });
 
-  describe('get cookie can use filter', () => {
+  describe('get cookie can use filter', async () => {
     const nowTime = Date.now();
     const cookie1: Cookie = {
       name: 'name1',
@@ -165,8 +170,15 @@ describe('test main', async () => {
       sameSite: 'Strict',
     };
 
+    // tslint:disable-next-line:no-shadowed-variable
+    const client = mockClient();
     const cookies: Cookie[] = [cookie1, cookie2, cookie3, cookie4];
-    setCookies(...cookies);
+
+    beforeAll(() => {
+      Reflect.set(client, '_page', {});
+      Reflect.set(client, '_browser', {});
+      setCookies(client, ...cookies);
+    });
 
     it('default get all cookies', () => {
       expect(client.getCookies()).toEqual(cookies);
@@ -201,14 +213,14 @@ describe('test main', async () => {
     });
   });
 
-  describe('clear cookies remove all cookies', async () => {
+  it('clear cookies remove all cookies', async () => {
     setCookies(mockCookie());
-    expect(client.hasCookies()).toBeTruthy();
-    await client.clearCookies();
-    expect(client.hasCookies()).toBeFalsy();
+    expect(globalClient.hasCookies()).toBeTruthy();
+    await globalClient.clearCookies();
+    expect(globalClient.hasCookies()).toBeFalsy();
   });
 
-  describe('get cookie map', () => {
+  it('get cookie map', () => {
     const cookie1: Cookie = mockCookie({
       name: 'name1',
       value: 'value1',
@@ -218,10 +230,10 @@ describe('test main', async () => {
       value: 'value2',
     });
     setCookies(cookie1, cookie2);
-    expect(client.getCookiesMap()).toEqual({ name1: 'value1', name2: 'value2' });
+    expect(globalClient.getCookiesMap()).toEqual({ name1: 'value1', name2: 'value2' });
   });
 
-  describe('serialization cookies', () => {
+  it('serialization cookies', () => {
     const cookie1: Cookie = mockCookie({
       name: 'name1',
       value: 'value1',
@@ -232,7 +244,7 @@ describe('test main', async () => {
     });
     setCookies(cookie1, cookie2);
 
-    expect(client.toJson()).toBe(JSON.stringify({ name1: 'value1', name2: '"value2"' }));
-    expect(client.toString()).toBe('name1=value1; name2="value2"');
+    expect(globalClient.toJson()).toBe(JSON.stringify({ name1: 'value1', name2: '"value2"' }));
+    expect(globalClient.toString()).toBe('name1=value1; name2="value2"');
   });
 });
