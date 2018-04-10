@@ -1,6 +1,7 @@
 # puppeteer-signin
 
 [![Build Status](https://travis-ci.org/Hental/puppeteer-signin.svg?branch=master)](https://travis-ci.org/Hental/puppeteer-signin)
+[![Coveralls](https://img.shields.io/coveralls/Hental/puppeteer-signin.svg)](https://coveralls.io/github/Hental/puppeteer-signin)
 
 use puppeteer to sign in and get cookies
 

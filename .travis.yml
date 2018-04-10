@@ -1,9 +1,17 @@
 language: node_js
+
 node_js:
 - '8.0'
-before_install:
-- npm install -g typescript@latest
-- npm install -g jest@latest
-- npm install -g ts-jest@latest
+
+branches:
+  only:
+  - master
+
+befote_install:
+- npm install -g yarn@latest
+
+install:
+- yarn
+
 script:
-- npm test
+- yarn test:cover

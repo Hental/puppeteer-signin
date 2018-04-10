@@ -18,7 +18,7 @@
   "scripts": {
     "lint": "tslint src/*.ts",
     "test": "jest",
-    "test:cover": "jest --coverage",
+    "test:cover": "node --harmony_proxies node_modules/.bin/jest --coverage && cat ./test/coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "prepare": "tsc"
   },
   "dependencies": {
