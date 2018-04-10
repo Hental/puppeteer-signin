@@ -1,5 +1,14 @@
 import * as http from 'http';
 
+declare global {
+  namespace NodeJS {
+    interface Global {
+      SERVER?: http.Server;
+      PORT: number;
+    }
+  }
+}
+
 async function mockServer() {
   let server;
   let port = 12345;
@@ -20,6 +29,7 @@ async function mockServer() {
     }
   } while (!server);
   (global as any).PORT = port;
+  (global as any).SERVER = server;
   // tslint:disable-next-line:no-console
   console.log('server lanuch success, host: ', `http://localhost:${port}`);
   return server;

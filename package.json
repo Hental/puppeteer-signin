@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "tslint src/*.ts",
     "test": "jest",
+    "test:cover": "jest --coverage",
     "prepublish": "tsc"
   },
   "dependencies": {

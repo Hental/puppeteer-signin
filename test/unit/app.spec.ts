@@ -16,7 +16,7 @@ function mockCookie(opt: Partial<Cookie> = {}): Cookie {
 }
 
 function mockClient(opt: Partial<ClientOptions> = {}) {
-  const p: number = (global as any).PORT;
+  const p: number = global.PORT;
   const c = new Client({
     signinUrl: `http://localhost:${p}`,
     username: '.username',
@@ -42,6 +42,10 @@ describe('test main', async () => {
 
   afterAll(async () => {
     await globalClient.close();
+    const server = global.SERVER;
+    if (server) {
+      await new Promise((res) => server.close(res));
+    }
   });
 
   function setCookies(c: Client | Cookie, ...cookies: Cookie[]) {
