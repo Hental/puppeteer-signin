@@ -1,5 +1,7 @@
 # puppeteer-signin
 
+[![Build Status](https://travis-ci.org/Hental/puppeteer-signin.svg?branch=master)](https://travis-ci.org/Hental/puppeteer-signin)
+
 use puppeteer to sign in and get cookies
 
 ## example
