@@ -45,8 +45,7 @@ function warn(type: string, ...msgs: any[]) {
 }
 
 class Client {
-  public options!: ClientOptions;
-
+  private _options!: ClientOptions;
   private _browser!: Browser;
   private _page!: Page;
   private _cookies: Cookie[] = [];
@@ -56,15 +55,23 @@ class Client {
     this._initOption(options);
   }
 
+  public get options() {
+    return this._options;
+  }
+
+  public set options(_) {
+    throw new Error('options is read only, please set by use setOptions');
+  }
+
   public async launch() {
-    const opt = this.options;
+    const opt = this._options;
     this._browser = await puppeteer.launch({ headless: !opt.debug });
     this._page = await this._browser.newPage();
   }
 
   public setOptions(opt: Partial<ClientOptions>) {
-    this.options = {
-      ...this.options,
+    this._options = {
+      ...this._options,
       ...opt,
     };
   }
@@ -74,7 +81,7 @@ class Client {
   }
 
   public async signin(username: string, password: string, options: SigninOptions = {}) {
-    const opt = this.options;
+    const opt = this._options;
     const page = this._page;
     const args = [username, password, options];
     const { jump = true } = options;
@@ -186,7 +193,7 @@ class Client {
       debug: false,
     };
 
-    this.options = {
+    this._options = {
       ...defOptions,
       ...opt,
     };
@@ -244,16 +251,25 @@ class ProxyClient {
 
     const proxy = new Proxy(instance, {
       get(target, prop, receiver) {
-        if (prop === 'launch' || prop === 'on') {
-          return Reflect.get(target, prop).bind(target);
-        } else if (!Reflect.get(target, '_browser') || !Reflect.get(target, '_page')) {
+        const allowProps = ['launch', 'on', 'setOptions', 'options'];
+        const propStr = prop.toString();
+
+        if (
+          allowProps.includes(propStr)
+          || propStr.startsWith('_')
+          || (Reflect.get(target, '_browser') && Reflect.get(target, '_page'))
+        ) {
+          const val = Reflect.get(target, prop, receiver);
+          if (val && val.bind) val.bind(target);
+          return val;
+        }
+        else {
           Reflect.get(target, '_handleError', receiver).call(
             target,
-            new Error('must launch browser first!'),
+            new Error(`must launch browser first! prop: ${propStr}`),
           );
           return () => { };
         }
-        return Reflect.get(target, prop, receiver);
       },
     }) as Client;
     return proxy;

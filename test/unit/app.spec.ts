@@ -56,7 +56,7 @@ describe('test main', async () => {
     Reflect.set(globalClient, '_cookies', [c, ...cookies]);
   }
 
-  it('should lanch first', () => {
+  it('should lanch first', async () => {
     const client = mockClient();
     expect.assertions(1);
     try {
@@ -66,10 +66,33 @@ describe('test main', async () => {
     }
   });
 
+  it('options is readnoly', () => {
+    expect.assertions(1);
+    try {
+      globalClient.options = globalClient.options;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+    }
+  });
+
+  it('can setOptions and add event listener before launch', () => {
+    const client = mockClient();
+    const cb1 = jest.fn();
+    const cb2 = jest.fn();
+    const oldOpt = client.options;
+    const opt = { signinUrl: 'newUrl', password: 'pwd', username: 'name', submit: 'sub' };
+    client.setOptions(opt);
+    client.on('readySignin', cb1);
+    client.on('beforeSubmit', cb2);
+
+    expect(client.options).toEqual({ ...oldOpt, ...opt });
+  });
+
   it('get empty array if no cookies', async () => {
     const client = await mockLaunchClient();
     expect(client.getCookies().length).toBe(0);
     expect(client.hasCookies()).toBeFalsy();
+    await client.close();
   });
 
   it('warn if not signin success', async () => {
@@ -78,15 +101,18 @@ describe('test main', async () => {
     await client.signin('', '', { jump: false });
     expect(fn).toBeCalled();
     expect(client.hasCookies()).toBeFalsy();
+    await client.close();
   });
 
   it('option username add password can be string or function', async () => {
     const password = jest.fn();
     const username = jest.fn();
+    const submit = jest.fn();
     const args: [string, string, SigninOptions] = ['username', 'password', { jump: false }];
     const client = await mockLaunchClient({
       password,
       username,
+      submit,
     });
     await client.signin.apply(client, args);
     const page = Reflect.get(client, '_page');
@@ -95,6 +121,9 @@ describe('test main', async () => {
     expect(username).toBeCalledWith(page, args[0]);
     expect(password).toBeCalled();
     expect(password).toBeCalledWith(page, args[1]);
+    expect(submit).toBeCalled();
+    expect(submit).toBeCalledWith(page);
+    await client.close();
   });
 
   it('call event when signin', async () => {
@@ -115,6 +144,7 @@ describe('test main', async () => {
     expect(cb2).toBeCalledWith(page, args);
     expect(cb3).toBeCalled();
     expect(cb3).toBeCalledWith(page, args);
+    await client.close();
   });
 
   it('register error event and it will handle All error', async () => {
@@ -129,6 +159,7 @@ describe('test main', async () => {
     await client.launch();
     await client.signin('', '', { jump: false });
     expect(errorCb).toHaveBeenCalledTimes(times + 1);
+    await client.close();
   });
 
   describe('get cookie can use filter', async () => {
@@ -182,6 +213,10 @@ describe('test main', async () => {
       Reflect.set(client, '_page', {});
       Reflect.set(client, '_browser', {});
       setCookies(client, ...cookies);
+    });
+
+    afterAll(async () => {
+      await client.close();
     });
 
     it('default get all cookies', () => {
