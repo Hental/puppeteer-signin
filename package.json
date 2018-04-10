@@ -1,15 +1,22 @@
 {
   "name": "puppeteer-signin",
-  "version": "0.1.0",
-  "description": "use puppeteer to sign in",
+  "version": "1.0.0",
+  "description": "use puppeteer to sign in and get cookies",
   "main": "lib/src/index.js",
   "types": "src/index.ts",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hental/puppeteer-signin"
+  },
+  "bugs": {
+    "url": "https://github.com/Hental/puppeteer-signin/issues"
+  },
   "scripts": {
     "lint": "tslint src/*.ts",
     "test": "jest",
     "test:cover": "jest --coverage",
-    "prepublish": "tsc"
+    "prepare": "tsc"
   },
   "dependencies": {
     "puppeteer": "^1.2.0"
