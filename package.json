@@ -5,9 +5,12 @@
   "main": "lib/src/index.js",
   "types": "src/index.ts",
   "license": "MIT",
+  "keywords": [
+    "puppeteer"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Hental/puppeteer-signin"
+    "url": "https://github.com/Hental/puppeteer-signin.git"
   },
   "bugs": {
     "url": "https://github.com/Hental/puppeteer-signin/issues"

@@ -1,0 +1,21 @@
+# cache
+.DS_Store
+*~
+.cache
+
+# editor
+.vscode/
+
+# log
+log/
+*.log
+
+# test
+test/
+test/coverage
+lib/test/
+
+# other
+__*.*
+*.py
+
