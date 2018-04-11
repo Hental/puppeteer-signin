@@ -15,8 +15,19 @@ async function mockServer() {
   do {
     try {
       await new Promise((res, rej) => {
-        server = http.createServer((request, response) => {
-          response.end('test html, request:', request.url);
+        server = http.createServer((_, response) => {
+          response.setHeader('Content-Type', 'text/html; charset=utf-8');
+          response.end(`
+            <html>
+            <body>
+              <input type="text" class="username" />
+              <input type="text" class="password" />
+              <button class="submit" >
+                submit
+              </button>
+            </body>
+            </html>
+          `);
         });
         server.on('error', rej);
         server.on('listening', res);

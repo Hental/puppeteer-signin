@@ -65,8 +65,8 @@ class Client {
 
   public async launch() {
     const opt = this._options;
-    this._browser = await puppeteer.launch({ headless: !opt.debug });
-    this._page = await this._browser.newPage();
+    if (!this._browser) this._browser = await puppeteer.launch({ headless: !opt.debug });
+    if (!this._page) this._page = await this._browser.newPage();
   }
 
   public setOptions(opt: Partial<ClientOptions>) {
@@ -201,11 +201,11 @@ class Client {
 
   private async _callInput(page: Page, cfg: InputConfig, val: string) {
     if (callable(cfg)) {
-      cfg.call(null, page, val);
+      await cfg.call(null, page, val);
     } else {
       const el = await page.$(cfg);
       if (el) {
-        el.type(val, { delay: 1 });
+        await el.type(val, { delay: 1 });
       } else {
         warn('input type', 'can\'t find input element', cfg, page);
       }
@@ -214,11 +214,11 @@ class Client {
 
   private async _callSubmit(page: Page, cfg: InputConfig) {
     if (callable(cfg)) {
-      cfg.call(null, page);
+      await cfg.call(null, page);
     } else {
       const el = await page.$(cfg);
       if (el) {
-        el.click({ delay: 1 });
+        await el.click({ delay: 1 });
       } else {
         warn('submit', 'can\'t find submit button element', cfg, page);
       }

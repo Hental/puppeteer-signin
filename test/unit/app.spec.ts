@@ -1,3 +1,4 @@
+import indexDefaultExport from '@/index';
 import Client, { ClientOptions, SigninOptions } from '@/app';
 import { Cookie } from 'puppeteer';
 
@@ -56,6 +57,10 @@ describe('test main', async () => {
     Reflect.set(globalClient, '_cookies', [c, ...cookies]);
   }
 
+  it('default export Client', () => {
+    expect(indexDefaultExport).toBe(Client);
+  });
+
   it('should lanch first', async () => {
     const client = mockClient();
     expect.assertions(1);
@@ -64,6 +69,15 @@ describe('test main', async () => {
     } catch (err) {
       expect(err).toBeInstanceOf(Error);
     }
+  });
+
+  it('only launch once', async () => {
+    const browser = Reflect.get(globalClient, '_browser');
+    const page = Reflect.get(globalClient, '_page');
+    await globalClient.launch();
+
+    expect(Reflect.get(globalClient, '_browser')).toBe(browser);
+    expect(Reflect.get(globalClient, '_page')).toBe(page);
   });
 
   it('options is readnoly', () => {
@@ -96,10 +110,11 @@ describe('test main', async () => {
   });
 
   it('warn if not signin success', async () => {
-    const client = await mockLaunchClient();
+    const client = await mockLaunchClient({ username: '.not', password: '.not', submit: '.not' });
     const fn = console.warn = jest.fn();
     await client.signin('', '', { jump: false });
     expect(fn).toBeCalled();
+    expect(fn.mock.calls.length >= 3).toBeTruthy();
     expect(client.hasCookies()).toBeFalsy();
     await client.close();
   });
@@ -147,8 +162,17 @@ describe('test main', async () => {
     await client.close();
   });
 
+  it('default signin will wait page navigation', async () => {
+    const client = await mockLaunchClient();
+    const page = Reflect.get(client, '_page');
+    const fn = jest.fn();
+    page.waitForNavigation = fn;
+    await client.signin('', '');
+    expect(fn).toBeCalled();
+  });
+
   it('register error event and it will handle All error', async () => {
-    const client = mockClient({ signinUrl: '' });
+    const client = mockClient();
     const errorCb = jest.fn();
     client.on('error', errorCb);
     client.getCookies();
@@ -157,8 +181,15 @@ describe('test main', async () => {
     const times = errorCb.mock.calls.length;
 
     await client.launch();
+
+    client.setOptions({ username: '', password: '' });
     await client.signin('', '', { jump: false });
     expect(errorCb).toHaveBeenCalledTimes(times + 1);
+
+    client.setOptions({ signinUrl: '' });
+
+    await client.signin('', '', { jump: false });
+    expect(errorCb).toHaveBeenCalledTimes(times + 2);
     await client.close();
   });
 
@@ -225,12 +256,16 @@ describe('test main', async () => {
 
     it('filter domain', () => {
       expect(client.getCookies({ domain: '.' })).toEqual(cookies);
+      expect(client.getCookies({ domain: /./ })).toEqual(cookies);
       expect(client.getCookies({ domain: 'https' })).toEqual([cookie3, cookie4]);
+      expect(client.getCookies({ domain: /^https/ })).toEqual([cookie3, cookie4]);
     });
 
     it('filter path', () => {
       expect(client.getCookies({ path: '.' })).toEqual(cookies);
+      expect(client.getCookies({ path: /./ })).toEqual(cookies);
       expect(client.getCookies({ path: '/a' })).toEqual([cookie1, cookie2]);
+      expect(client.getCookies({ path: /^\/a/ })).toEqual([cookie1, cookie2]);
     });
 
     it('filter httpOnly', () => {
@@ -285,5 +320,14 @@ describe('test main', async () => {
 
     expect(globalClient.toJson()).toBe(JSON.stringify({ name1: 'value1', name2: '"value2"' }));
     expect(globalClient.toString()).toBe('name1=value1; name2="value2"');
+  });
+
+  it('private method _handleError can accept callback', () => {
+    const fn = Reflect.get(globalClient, '_handleError');
+    const cb = jest.fn();
+    const err = new Error('test');
+
+    fn.call(globalClient, err, cb);
+    expect(cb).toBeCalledWith(err);
   });
 });
