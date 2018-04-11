@@ -16,7 +16,7 @@ befote_install:
 - npm install -g yarn@latest
 
 install:
-- yarn
+- travis_wait yarn
 
 script:
-- yarn test:coveralls
+- travis_wait yarn test:coveralls
