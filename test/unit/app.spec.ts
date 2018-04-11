@@ -169,6 +169,7 @@ describe('test main', async () => {
     page.waitForNavigation = fn;
     await client.signin('', '');
     expect(fn).toBeCalled();
+    await client.close();
   });
 
   it('register error event and it will handle All error', async () => {
