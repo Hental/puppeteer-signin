@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import puppeteer, { Browser, Page, Cookie } from 'puppeteer';
 
 type InputCallback = (page: Page, value: string) => void;
@@ -12,10 +13,10 @@ interface ClientOptions {
 }
 
 interface EventsMap {
-  readySignin?(page: Page, args: [string, string, any]): void;
-  beforeSubmit?(page: Page, args: [string, string, any]): void;
-  beforeNavigation?(page: Page, args: [string, string, any]): void;
-  error?(e: Error): void;
+  readySignin(page: Page, args: [string, string, any]): void;
+  beforeSubmit(page: Page, args: [string, string, any]): void;
+  beforeNavigation(page: Page, args: [string, string, any]): void;
+  error(e: Error): void;
 }
 
 interface CookieFilter {
@@ -44,14 +45,14 @@ function warn(type: string, ...msgs: any[]) {
   console.warn(`[warning] [${type}]`, ...msgs);
 }
 
-class Client {
+class Client extends EventEmitter {
   private _options!: ClientOptions;
   private _browser!: Browser;
   private _page!: Page;
   private _cookies: Cookie[] = [];
-  private _events: EventsMap = {};
 
   constructor(options: ClientOptions) {
+    super();
     this._initOption(options);
   }
 
@@ -61,6 +62,10 @@ class Client {
 
   public set options(_) {
     throw new Error('options is read only, please set by use setOptions');
+  }
+
+  public on<T extends keyof EventsMap>(name: T, listener: EventsMap[T]) {
+    return super.on(name, listener);
   }
 
   public async launch() {
@@ -76,8 +81,8 @@ class Client {
     };
   }
 
-  public on<T extends keyof EventsMap>(eventname: T, cb: EventsMap[T]) {
-    this._events[eventname] = cb;
+  public getOptions() {
+    return this._options;
   }
 
   public async signin(username: string, password: string, options: SigninOptions = {}) {
@@ -86,12 +91,12 @@ class Client {
     const args = [username, password, options];
     const { jump = true } = options;
     const mockSignin = async () => {
-      await this._emit('readySignin', page, args);
+      await this.emit('readySignin', page, args);
       await this._callInput(page, opt.username, username);
       await this._callInput(page, opt.password, password);
-      await this._emit('beforeSubmit', page, args);
+      await this.emit('beforeSubmit', page, args);
       await this._callSubmit(page, opt.submit);
-      await this._emit('beforeNavigation', page, args);
+      await this.emit('beforeNavigation', page, args);
       if (jump) await page.waitForNavigation();
     };
 
@@ -177,13 +182,8 @@ class Client {
 
   private _getCookies() {
     if (!hasContent(this._cookies)) {
-      // const cookies = await this._page.cookies();
-      // if (hasContent(cookies)) {
-      //   this._cookies = cookies;
-      // } else {
       warn('get cookies', 'please signin first.');
       return [];
-      // }
     }
     return this._cookies;
   }
@@ -225,17 +225,10 @@ class Client {
     }
   }
 
-  private async _emit(name: keyof EventsMap, ...args: any[]) {
-    const fn = this._events[name];
-    if (callable(fn)) {
-      await fn.apply(this, args);
-    }
-  }
-
   private _handleError(err: Error, cb?: (e: Error) => void) {
-    const handler = this._events.error;
-    if (callable(handler)) {
-      handler(err);
+    const listeners = this.listeners('error');
+    if (listeners.length > 0) {
+      listeners.forEach((listener) => listener.call(null, err));
     } else if (callable(cb)) {
       cb(err);
     } else {
@@ -249,7 +242,9 @@ class ProxyClient {
   constructor(options: ClientOptions) {
     const instance = new Client(options);
 
+    // proxy client
     const proxy = new Proxy(instance, {
+      // inspect client is lanuch before signin or get cookies
       get(target, prop, receiver) {
         const allowProps = ['launch', 'on', 'setOptions', 'options'];
         const propStr = prop.toString();
@@ -272,6 +267,7 @@ class ProxyClient {
         }
       },
     }) as Client;
+
     return proxy;
   }
 }
