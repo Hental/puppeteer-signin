@@ -5,10 +5,19 @@
 
 use puppeteer to sign in and get cookies
 
+## install
+
+```shell
+npm install puppeteer-signin
+// or
+yarn add puppeteer-signin
+```
+
 ## example
 
 ```js
 import Client from 'puppeteer-signin';
+// const Client = require('puppeteer-signin').default;
 
 const client = new Client({
   signinUrl: 'http://example/path/to/signin',
